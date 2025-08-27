@@ -1,0 +1,26 @@
+name: Validate pilots data
+on:
+  pull_request:
+    paths:
+      - '**/data.geojson'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install validator from org repo
+        run: pip install git+https://github.com/BharatAddress/tools-validator@main
+      - name: Download schema
+        run: |
+          curl -sSL -o schema.json https://raw.githubusercontent.com/BharatAddress/specs/main/address-register.schema.json
+      - name: Validate all data.geojson files
+        shell: bash
+        run: |
+          set -e
+          for f in $(git ls-files "**/data.geojson"); do
+            echo "Validating $f";
+            python -m validate "$f" --schema schema.json --schema-target collection;
+          done
